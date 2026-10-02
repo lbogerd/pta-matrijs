@@ -219,4 +219,107 @@ describe("shared official document layout", () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+  it("keeps long-text paragraph numbering and preview/PDF page geometry aligned", async (t) => {
+    const e = fixture();
+    e.sections[0].text = Array.from(
+      { length: 32 },
+      (_, i) =>
+        `<p>Paragraph ${i + 1}: ${"Readers compare the evidence with their own experience and explain how the writer supports the central idea. ".repeat(4)}</p>`,
+    ).join("");
+    const html = await renderPreview(e, "exam"),
+      browser = await chromium.launch({
+        headless: true,
+        args: ["--no-sandbox"],
+      }),
+      dir = await mkdtemp(path.join(tmpdir(), "pta-layout-"));
+    try {
+      const page = await browser.newPage();
+      const library = await readFile(
+        "node_modules/pagedjs/dist/paged.polyfill.js",
+      );
+      await page.route("**/*", (route) =>
+        route.request().url().endsWith("/paged.polyfill.js")
+          ? route.fulfill({ body: library, contentType: "text/javascript" })
+          : route.abort(),
+      );
+      await page.setContent(
+        html.replace(
+          'src="/paged.polyfill.js"',
+          'src="https://document.invalid/paged.polyfill.js"',
+        ),
+      );
+      await page.waitForFunction(() =>
+        Boolean((window as any).__PAGED_READY__),
+      );
+      const pages = page.locator(".pagedjs_page"),
+        count = await pages.count();
+      assert.ok(count >= 4);
+      const screenshots: Buffer[] = [];
+      for (let i = 0; i < count; i++)
+        screenshots.push(await pages.nth(i).screenshot());
+      const box = await pages.first().boundingBox();
+      assert.ok(box);
+      const file = path.join(dir, "long.pdf");
+      await writeFile(file, await renderPdf(e, "exam"));
+      const { stdout: text } = await exec("pdftotext", ["-layout", file, "-"]);
+      const { stdout: info } = await exec("pdfinfo", [file]);
+      assert.match(info, new RegExp(`Pages:\\s+${count}`));
+      assert.match(text, /1\s+Paragraph 1:/);
+      assert.match(text, /32\s+Paragraph 32:/);
+      await exec("pdftoppm", [
+        "-png",
+        "-scale-to-x",
+        String(Math.round(box.width)),
+        "-scale-to-y",
+        String(Math.round(box.height)),
+        file,
+        path.join(dir, "raster"),
+      ]);
+      for (let i = 0; i < count; i++) {
+        const raster = await readFile(
+          path.join(
+            dir,
+            `raster-${String(i + 1).padStart(String(count).length, "0")}.png`,
+          ),
+        );
+        const difference = await page.evaluate(
+          async ({ left, right }) => {
+            const a = new Image(),
+              b = new Image();
+            a.src = "data:image/png;base64," + left;
+            b.src = "data:image/png;base64," + right;
+            await a.decode();
+            await b.decode();
+            const canvas = document.createElement("canvas");
+            canvas.width = a.width;
+            canvas.height = a.height;
+            const ctx = canvas.getContext("2d")!;
+            ctx.drawImage(a, 0, 0);
+            const first = ctx.getImageData(0, 0, a.width, a.height).data;
+            ctx.clearRect(0, 0, a.width, a.height);
+            ctx.drawImage(b, 0, 0, a.width, a.height);
+            const second = ctx.getImageData(0, 0, a.width, a.height).data;
+            let difference = 0;
+            for (let j = 0; j < first.length; j++)
+              if (j % 4 !== 3) difference += Math.abs(first[j] - second[j]);
+            return difference / (a.width * a.height * 3);
+          },
+          {
+            left: screenshots[i].toString("base64"),
+            right: raster.toString("base64"),
+          },
+        );
+        t.diagnostic(
+          `Page ${i + 1}: preview/PDF mean RGB difference ${difference.toFixed(2)}/255`,
+        );
+        assert.ok(
+          difference < 12,
+          `Page ${i + 1} geometry differs: mean RGB difference ${difference}`,
+        );
+      }
+    } finally {
+      await browser.close();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
 });

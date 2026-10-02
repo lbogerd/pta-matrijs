@@ -117,6 +117,38 @@ test("complete controlled examination lifecycle, permissions, preview and PDF wi
       ).response.status(),
     ).toBe(409);
     const section = exam.sections[0];
+    const image = await author.page.request.post(`/api/exams/${id}/files`, {
+      headers: { origin: base },
+      multipart: {
+        file: {
+          name: "controle.png",
+          mimeType: "image/png",
+          buffer: Buffer.from(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jR1sAAAAASUVORK5CYII=",
+            "base64",
+          ),
+        },
+      },
+    });
+    expect(image.ok()).toBe(true);
+    const uploaded = await image.json();
+    expect((await outsider.page.request.get(uploaded.url)).status()).toBe(403);
+    expect((await office.page.request.get(uploaded.url)).status()).toBe(403);
+    expect((await author.page.request.get(uploaded.url)).ok()).toBe(true);
+    expect(
+      (
+        await author.page.request.post(`/api/exams/${id}/lock`, {
+          headers: { origin: base },
+          data: { sectionId: section.id },
+        })
+      ).ok(),
+    ).toBe(true);
+    section.text += `<p><img src="${uploaded.url}" alt="Controleafbeelding"></p>`;
+    expect(
+      (
+        await action(author.page, id, { type: "save-section", section })
+      ).response.ok(),
+    ).toBe(true);
     const answers = Object.fromEntries(
       exam.template.items
         .filter((x: any) => x.active)

@@ -27,6 +27,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: sudo apt-get install -y poppler-utils
       - run: npm run migrate
       - run: npm run build
       - run: npm run typecheck
