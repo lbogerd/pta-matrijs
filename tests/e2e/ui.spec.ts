@@ -2,10 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 const base = process.env.TEST_BASE_URL || "https://pta-matrijs.tainer.run";
 const domain = process.env.SEED_EMAIL_DOMAIN || "pilot.pta-matrijs.local";
 const password = process.env.SEED_PASSWORD!;
-test.skip(
-  !password,
-  "Set the private SEED_PASSWORD to run authenticated UI checks.",
-);
+
 async function login(page: Page, role: string) {
   await page.goto("/");
   await page
@@ -197,7 +194,7 @@ test("administrator manages teams and a checklist draft through the UI", async (
   await page
     .getByRole("button", { name: "Docententeams", exact: true })
     .click();
-  const team = `UI team ${Date.now()}`;
+  const team = `${process.env.E2E_RUN_ID} UI team`;
   await page.getByRole("textbox", { name: "Teamnaam", exact: true }).fill(team);
   await page
     .getByRole("button", { name: "Team aanmaken", exact: true })
@@ -214,7 +211,9 @@ test("administrator manages teams and a checklist draft through the UI", async (
   await page
     .getByLabel("Omschrijving", { exact: true })
     .last()
-    .fill("UI-pilot: controleer de bronvermelding zorgvuldig.");
+    .fill(
+      `${process.env.E2E_RUN_ID}: controleer de bronvermelding zorgvuldig.`,
+    );
   await page
     .getByLabel("Toelichting", { exact: true })
     .last()

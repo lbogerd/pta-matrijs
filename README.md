@@ -25,15 +25,21 @@ npm run typecheck
 npm test
 ```
 
-De API-integratietest gebruikt `DATABASE_URL`, `BETTER_AUTH_URL` en `BETTER_AUTH_SECRET`; zonder databaseconfiguratie wordt alleen die integratietest overgeslagen. GitHub Actions voert ook de PostgreSQL-integratietest uit.
+De database-tests gebruiken `DATABASE_URL` uitsluitend als serververbinding om een tijdelijke database aan te maken. Alle tabellen en records staan in die tijdelijke database; deze wordt ook na een mislukte test verwijderd. De databasegebruiker moet databases kunnen maken en verwijderen. Zonder `DATABASE_URL` worden database-tests overgeslagen. GitHub Actions voert ze met PostgreSQL uit.
 
-Voor de representatieve pilot: voer `npm run seed` uit met `DATABASE_URL`, een geheime `SEED_PASSWORD` (minimaal 12 tekens) en `SEED_EMAIL_DOMAIN`. Dit maakt afzonderlijke auteur-, reviewer-, commissie-, bureau- en buitenstaanderaccounts en het concept **Reading the world**. De seed overschrijft bestaande accounts of examens niet.
+Voor browsercontroles op de eigen Compose-deployment:
 
 ```sh
 TEST_BASE_URL=https://pta-matrijs.tainer.run npm run test:e2e
+# Als Docker alleen via sudo toegankelijk is:
+E2E_DOCKER_SUDO=1 npm run test:e2e
 ```
 
-De Playwright-test gebruikt dezelfde geheime seedvariabelen. Zij doorloopt de echte publieke deployment, inclusief aanmelding, matrijs, onafhankelijke controle, bevindingen, terugsturen, normeringsvergrendeling, vrijgave, pdf-publicatie en intrekking. Acceptatie-examens blijven met hun auditgeschiedenis bewaard en zijn herkenbaar aan hun titel.
+Playwright maakt automatisch tijdelijke accounts (inclusief een eigen beheeraccount), een uniek team en een proefexamen aan via een private CLI in de webcontainer. Bestaande beheer- of pilotwachtwoorden zijn niet nodig. Iedere run verwijdert zijn examens, kopieën, teams, checklistdrafts, sessies, auditregels, uploads en pdf's na afloop, ook na testfalen. Een gesloten runnerverbinding start de cleanup. Bij een harde stop van de container blijft een privéjournal achter; de volgende run herstelt dat voordat nieuwe testgegevens worden aangemaakt. Gelijktijdige browserruns op dezelfde database worden geweigerd.
+
+De browsertests controleren dat de fixture-database bij `TEST_BASE_URL` hoort. Zonder toegang tot de juiste container of database stoppen ze vóór de browsertests. Voor een installatie buiten Compose kunnen `E2E_DATABASE_URL` en `E2E_STORAGE_DIR` naar de juiste database en private bestandenmap wijzen, met `APP_URL` op de doel-URL. Er is geen publiek cleanup-endpoint.
+
+`npm run seed` blijft een **expliciete, handmatige demo-invoer**, buiten de testworkflow. Die optionele demo blijft staan totdat de beheerder haar verwijdert; tests gebruiken deze opdracht niet.
 
 ## Procesregels
 

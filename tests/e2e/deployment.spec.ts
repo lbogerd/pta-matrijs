@@ -8,10 +8,8 @@ import {
 const base = process.env.TEST_BASE_URL || "https://pta-matrijs.tainer.run";
 const domain = process.env.SEED_EMAIL_DOMAIN || "pilot.pta-matrijs.local";
 const password = process.env.SEED_PASSWORD!;
-test.skip(
-  !password,
-  "Set SEED_PASSWORD to the private pilot-account password.",
-);
+const fixtureExamId = process.env.E2E_FIXTURE_EXAM_ID!;
+
 async function login(browser: Browser, role: string) {
   const context = await browser.newContext({ baseURL: base });
   const page = await context.newPage();
@@ -84,7 +82,7 @@ test("complete controlled examination lifecycle, permissions, preview and PDF wi
       path: "test-results/teacher-dashboard.png",
       fullPage: true,
     });
-    let result = await action(author.page, "pilot-reading", { type: "copy" });
+    let result = await action(author.page, fixtureExamId, { type: "copy" });
     expect(result.response.ok(), JSON.stringify(result.data)).toBe(true);
     let exam = result.data.exam;
     const id = exam.id;
