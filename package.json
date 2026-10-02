@@ -1,0 +1,45 @@
+{
+  "name": "pta-matrijs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 3017",
+    "build": "vite build",
+    "start": "node .output/server/index.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "migrate": "tsx scripts/migrate.ts",
+    "seed": "tsx scripts/seed.ts",
+    "test:e2e": "playwright test",
+    "assets": "node scripts/assets.mjs",
+    "prebuild": "npm run assets",
+    "predev": "npm run assets"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "latest",
+    "@tanstack/react-start": "latest",
+    "better-auth": "latest",
+    "decimal.js": "^10.6.0",
+    "lucide-react": "latest",
+    "pagedjs": "^0.4.3",
+    "pg": "^8.16.0",
+    "playwright": "latest",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sanitize-html": "^2.17.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "latest",
+    "@types/node": "^22.0.0",
+    "@types/pg": "latest",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/sanitize-html": "latest",
+    "@vitejs/plugin-react": "latest",
+    "nitro": "latest",
+    "tsx": "latest",
+    "typescript": "latest",
+    "vite": "latest"
+  }
+}

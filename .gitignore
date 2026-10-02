@@ -9,3 +9,5 @@ backups/
 playwright-report/
 test-results/
 .tanstack/
+
+public/paged.polyfill.js

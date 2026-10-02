@@ -1,0 +1,35 @@
+name: Verify
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: pta
+          POSTGRES_PASSWORD: ci-password-only
+          POSTGRES_DB: pta
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U pta -d pta"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://pta:ci-password-only@localhost:5432/pta
+      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_SECRET: ci-only-never-use-in-production-123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: sudo apt-get install -y poppler-utils
+      - run: npm run migrate
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm test
