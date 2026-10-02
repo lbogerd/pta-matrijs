@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pta
+      POSTGRES_USER: pta
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set password}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U pta -d pta']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3817:3000'
+    environment:
+      DATABASE_URL: postgres://pta:${POSTGRES_PASSWORD}@db:5432/pta
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set secret}
+      BETTER_AUTH_URL: ${APP_URL:-https://pta-matrijs.tainer.run}
+      APP_URL: ${APP_URL:-https://pta-matrijs.tainer.run}
+      STORAGE_DIR: /app/storage
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD}
+    volumes:
+      - files:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+volumes:
+  database:
+  files:
