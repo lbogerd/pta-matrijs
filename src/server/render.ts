@@ -2,6 +2,7 @@ import sanitizeHtml from "sanitize-html";
 import { readFile } from "node:fs/promises";
 import { chromium } from "playwright";
 import { pool } from "./db";
+import { normalizeRichText } from "./rich-text";
 import { gradeTable, maximumScore, validNTerm, type Exam } from "../lib/domain";
 export type DocumentKind = "exam" | "answers";
 const escape = (value: unknown) =>
@@ -34,7 +35,7 @@ export async function renderPreview(
     }
   const rich = (input: string) => {
     let paragraph = 0;
-    return sanitizeHtml(input, {
+    return sanitizeHtml(normalizeRichText(input), {
       allowedTags: [
         "p",
         "br",

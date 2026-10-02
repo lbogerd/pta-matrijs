@@ -1065,6 +1065,29 @@ function Publish({
               ? `Je stelt revisie ${exam.revision} vast met ${maximumScore(exam)} punten en N-term ${exam.nTerm}. De N-term kan daarna niet meer worden gewijzigd.`
               : "Verdere downloads worden onmiddellijk geblokkeerd. Eerder gedownloade bestanden kunnen niet worden teruggehaald."}
           </p>
+          {modal === "submit" && (
+            <div
+              className="table-wrap"
+              style={{ maxHeight: 280, overflow: "auto", marginTop: 16 }}
+            >
+              <table aria-label="Vast te stellen score-cijfertabel">
+                <thead>
+                  <tr>
+                    <th>Score</th>
+                    <th>Cijfer</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gradeTable(maximumScore(exam), exam.nTerm).map((row) => (
+                    <tr key={row.score}>
+                      <td>{row.score}</td>
+                      <td>{row.grade}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           <div className="form-actions">
             <Button variant="secondary" onClick={() => setModal("")}>
               Annuleren

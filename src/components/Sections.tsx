@@ -20,6 +20,7 @@ import {
 } from "../lib/domain";
 import { api, Badge, Button, Card, Empty, Field, Modal } from "./ui";
 import { FindingRow } from "./ExamDetail";
+import { LiveMatrix } from "./LiveMatrix";
 export function Sections({
   exam,
   user,
@@ -50,6 +51,7 @@ export function Sections({
   }
   return (
     <>
+      {!editing && <LiveMatrix exam={exam} />}
       <Card
         title={reviewMode ? "Een tweede paar ogen" : "Teksten & vragen"}
         description={
@@ -350,6 +352,12 @@ function SectionEditor({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const editor = useRef<HTMLDivElement>(null);
+  const liveExam: Exam = {
+    ...exam,
+    sections: exam.sections.some((existing) => existing.id === s.id)
+      ? exam.sections.map((existing) => (existing.id === s.id ? s : existing))
+      : [...exam.sections, s],
+  };
   function updateQ(q: Question) {
     setS({ ...s, questions: s.questions.map((x) => (x.id === q.id ? q : x)) });
   }
@@ -371,6 +379,7 @@ function SectionEditor({
         <Lock size={12} /> Dit onderdeel is tijdelijk voor jou vergrendeld. Sla
         binnen tien minuten op.
       </div>
+      <LiveMatrix exam={liveExam} unsaved sticky />
       <div className="form-grid">
         <div className="full">
           <Field label="Titel van het onderdeel">

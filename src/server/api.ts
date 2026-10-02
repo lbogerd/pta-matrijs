@@ -5,6 +5,7 @@ import { pool, transaction } from "./db";
 import { auth } from "./auth";
 import { createAccount, roles } from "./accounts";
 import { renderPreview, renderPdf } from "./render";
+import { normalizeRichText } from "./rich-text";
 import {
   createExam,
   applyAction,
@@ -461,10 +462,13 @@ export async function handleApi(req: Request): Promise<Response> {
           ? "image/png"
           : bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
             ? "image/jpeg"
-            : bytes.subarray(0, 5).toString() === "%PDF-"
-              ? "application/pdf"
-              : null;
-        if (!mime) fail(400, "Alleen PNG, JPEG en PDF zijn toegestaan.");
+            : bytes.subarray(0, 4).toString() === "RIFF" &&
+                bytes.subarray(8, 12).toString() === "WEBP"
+              ? "image/webp"
+              : bytes.subarray(0, 5).toString() === "%PDF-"
+                ? "application/pdf"
+                : null;
+        if (!mime) fail(400, "Alleen PNG, JPEG, WebP en PDF zijn toegestaan.");
         const fid = randomUUID(),
           filePath = path.resolve(storage, fid);
         await mkdir(storage, { recursive: true });
@@ -663,37 +667,7 @@ export async function handleApi(req: Request): Promise<Response> {
         );
         if (l.rows[0]?.user_id !== user.id)
           fail(409, "Neem eerst een bewerkvergrendeling op dit onderdeel.");
-        const { default: sanitize } = await import("sanitize-html");
-        action.section.text = sanitize(action.section.text, {
-          allowedTags: [
-            "p",
-            "br",
-            "strong",
-            "em",
-            "u",
-            "ol",
-            "ul",
-            "li",
-            "h2",
-            "h3",
-            "blockquote",
-            "img",
-          ],
-          allowedAttributes: { img: ["src", "alt"] },
-          allowedSchemes: [],
-          allowProtocolRelative: false,
-          transformTags: {
-            img: (tag, attrs) => ({
-              tagName: tag,
-              attribs: {
-                src: /^\/api\/files\/[a-z0-9-]+$/.test(attrs.src || "")
-                  ? attrs.src
-                  : "",
-                alt: attrs.alt || "",
-              },
-            }),
-          },
-        });
+        action.section.text = normalizeRichText(action.section.text);
         const imageIds = [
           ...action.section.text.matchAll(/src="\/api\/files\/([^"]+)"/g),
         ].map((m: any) => m[1]);

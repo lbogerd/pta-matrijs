@@ -70,8 +70,8 @@ for record in records:
     if original.name not in expected:
         raise SystemExit(f"Database references missing private file: {record['id']}")
     restored=target/original.name
-    with restored.open('rb') as content: header=content.read(8)
-    valid={'image/png':header==b'\x89PNG\r\n\x1a\n','image/jpeg':header[:3]==b'\xff\xd8\xff','application/pdf':header[:5]==b'%PDF-'}
+    with restored.open('rb') as content: header=content.read(12)
+    valid={'image/png':header[:8]==b'\x89PNG\r\n\x1a\n','image/jpeg':header[:3]==b'\xff\xd8\xff','application/pdf':header[:5]==b'%PDF-','image/webp':header[:4]==b'RIFF' and header[8:12]==b'WEBP'}
     if not valid.get(record['mime'],False):
         raise SystemExit(f"Restored file type mismatch: {record['id']}")
 print(f"Verified {len(records)} database file references and {len(expected)} restored files byte-for-byte.")
