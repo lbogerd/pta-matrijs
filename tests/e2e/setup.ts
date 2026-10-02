@@ -27,6 +27,13 @@ export default async function setup(config: FullConfig) {
         [
           ...(sudo ? ["-n", "docker"] : []),
           "compose",
+          ...(process.env.E2E_COMPOSE_PROJECT
+            ? ["--project-name", process.env.E2E_COMPOSE_PROJECT]
+            : []),
+          ...(process.env.E2E_COMPOSE_FILES || "")
+            .split(":")
+            .filter(Boolean)
+            .flatMap((file) => ["--file", file]),
           "exec",
           "-T",
           "web",
