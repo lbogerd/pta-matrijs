@@ -1,31 +1,396 @@
-import {describe,it} from 'node:test'
-import assert from 'node:assert/strict'
-import {applyAction,calculateGrade,gradeTable,copyExam,createExam,DEFAULT_TEMPLATE,matrixComparison,validateExam,type Exam,type Actor} from '../src/lib/domain'
-const author:Actor={id:'a',role:'teacher',teamIds:['t']}, reviewer:Actor={id:'r',role:'teacher',teamIds:['t']}, committee:Actor={id:'c',role:'committee',teamIds:[]}
-function fixture():Exam { const e=createExam('e','t','Reading');e.pta={schoolYear:'2026',programme:'TL',subject:'Engels',code:'EN1',material:'Reading',duration:60,aids:'Dictionary',weight:'25%',scheduled:'P2',resit:true};e.goals=[{id:'g',domain:'Reading',description:'Recognise meaning'},{id:'z',domain:'Reading',description:'Context'}];e.matrixVersions=[{version:1,cells:{g:{R:1,T1:0,T2:0,I:0},z:{R:0,T1:0,T2:0,I:0}},establishedBy:'a',establishedAt:'2026-01-01'}];e.sections=[{id:'s',title:'News',text:'A clear text.',source:'Own material',authorId:'a',reviewerId:'r',contributors:['a'],version:1,questions:[{id:'q',text:'Which?',options:['A','B'],correct:0,points:1,category:'R',allocations:{g:1,z:0},rationale:'The text says A.',passage:'A clear text'}],findings:[]}];return e }
-const reviewed=()=>applyAction(fixture(),reviewer,{type:'review',sectionId:'s',answers:Object.fromEntries(DEFAULT_TEMPLATE.items.map(i=>[i.id,true]))})
-describe('exact decimal N-term method',()=>{
- it('covers below/equal/above one and endpoints',()=>{for(const n of ['-10','0.5','1','1.25','20']){assert.equal(calculateGrade(0,10,n), '1.0');assert.equal(calculateGrade(10,10,n), '10.0')}assert.equal(calculateGrade(5,10,'1'), '5.5');assert.equal(calculateGrade(5,10,'1.25'), '5.8');assert.equal(calculateGrade(5,10,'0.25'), '4.8')})
- it('rounds halves up and is monotonic',()=>{assert.equal(calculateGrade(1,20,'1'), '1.5');for(const n of ['-2.37','0.3','1','1.73','4']){const table=gradeTable(100,n);assert.equal((table).length, 101);for(let i=1;i<table.length;i++)assert.ok((Number(table[i].grade)) >= (Number(table[i-1].grade)))}})
- it('keeps recurring fractions and arbitrarily close half boundaries exact',()=>{assert.equal(calculateGrade(1,60,'1'),'1.2');assert.equal(calculateGrade(5,10,'1.2499999999999999999999999999999999999999'),'5.7');assert.equal(calculateGrade(5,10,'1.25'),'5.8');assert.equal(calculateGrade(5,10,'1.2500000000000000000000000000000000000001'),'5.8')})
- it('rejects nonfinite, missing, fractional and zero maxima',()=>{for(const n of ['','NaN','Infinity'])assert.throws(()=>calculateGrade(0,10,n));assert.throws(()=>gradeTable(0,'1'));assert.throws(()=>calculateGrade(0.5,10,'1'))})
-})
-describe('matrix and independent review',()=>{
- it('counts explicit zero allocation without double counting',()=>{const e=reviewed();assert.deepEqual(matrixComparison(e).filter(c=>c.actual>0), [{goalId:'g',category:'R',planned:1,actual:1,difference:0}]);assert.deepEqual(validateExam(e), [])})
- it('blocks mismatches, fractional and invalid allocation',()=>{const e=reviewed();e.sections[0].questions[0].allocations.z=1;assert.ok((validateExam(e)).includes('Puntentoedeling moet exact gelijk zijn aan de vraagscore'));assert.ok((validateExam(e)).includes('Examen wijkt af van de vastgestelde matrijs'));e.sections[0].questions[0].points=1.5;assert.ok((validateExam(e)).includes('Vraagpunten moeten positieve gehele getallen zijn'))})
- it('forbids previous contributors even after assignment change',()=>{const e=fixture();e.sections[0].contributors.push('r');assert.throws(()=>applyAction(e,reviewer,{type:'review',sectionId:'s',answers:{}}), new RegExp('Eigen werk'))})
- it('invalidates content review and preserves contributor history',()=>{const e=reviewed();const section=structuredClone(e.sections[0]);section.text='Changed';const next=applyAction(e,author,{type:'save-section',section});assert.equal(next.sections[0].review, undefined);assert.notEqual(e.sections[0].review, undefined);assert.equal(next.sections[0].version, 2)})
- it('requires reviewer closure after author resolution',()=>{let e=applyAction(fixture(),reviewer,{type:'finding',sectionId:'s',text:'Clarify'});const findingId=e.sections[0].findings[0].id;e=applyAction(e,author,{type:'resolve-finding',sectionId:'s',findingId,resolution:'Fixed'});assert.throws(()=>applyAction(e,author,{type:'close-finding',sectionId:'s',findingId}));e=applyAction(e,reviewer,{type:'close-finding',sectionId:'s',findingId});assert.equal(e.sections[0].findings[0].state, 'closed')})
-})
-describe('immutable workflow and role boundaries',()=>{
- it('locks N across return, resubmit, release, withdrawal and revision',()=>{let e=applyAction(reviewed(),author,{type:'submit'});const snapshot=structuredClone(e.snapshots[0]);e=applyAction(e,committee,{type:'return',reason:'Adjust'});assert.throws(()=>applyAction(e,author,{type:'update',nTerm:'2'}), new RegExp('vergrendeld'));e=applyAction(e,author,{type:'resolve-finding',findingId:e.committeeFindings[0].id,resolution:'Addressed'});e=applyAction(e,author,{type:'submit'});e=applyAction(e,committee,{type:'release'});e=applyAction(e,committee,{type:'withdraw',reason:'Print issue'});e=applyAction(e,author,{type:'new-revision'});assert.throws(()=>applyAction(e,author,{type:'update',nTerm:'0.5'}));assert.deepEqual(e.snapshots[0], snapshot);assert.equal(e.nTermLock?.value, '1')})
- it('freezes submitted content and separates copy normering',()=>{const e=applyAction(reviewed(),author,{type:'submit'});assert.throws(()=>applyAction(e,author,{type:'save-section',section:e.sections[0]}), new RegExp('niet bewerkbaar'));const copied=copyExam(e,author,DEFAULT_TEMPLATE,'copy');assert.equal(copied.nTermLock, undefined);assert.deepEqual(copied.snapshots, []);assert.equal(copied.sections[0].review, undefined);assert.equal(copied.matrixVersions[0].establishedAt, undefined);assert.equal(applyAction(copied,author,{type:'update',nTerm:'2'}).nTerm, '2')})
- it('blocks taking over another author by forging assignment',()=>{const e=fixture();const section=structuredClone(e.sections[0]);section.authorId='r';section.reviewerId='a';assert.throws(()=>applyAction(e,reviewer,{type:'save-section',section}),/toegewezen auteur/)})
- it('retains authorship when a removed section is recreated',()=>{const e=applyAction(fixture(),author,{type:'remove-section',sectionId:'s'});const s=fixture().sections[0];s.authorId='r';s.reviewerId='a';s.contributors=[];assert.throws(()=>applyAction(e,reviewer,{type:'save-section',section:s}),/eigen werk/)})
- it('rejects unknown actions and malformed document shapes before persistence',()=>{const e=fixture();for(const action of [{type:'unknown'},{type:'update',pta:{}},{type:'update',goals:{}},{type:'save-section',section:{...e.sections[0],questions:null}},{type:'save-matrix',cells:{g:{R:'1',T1:0,T2:0,I:0}}},{type:'review',sectionId:'s',answers:{'check-1':'yes'}}])assert.throws(()=>applyAction(e,author,action as any));assert.equal(e.sections[0].version,1)})
- it('changes goals through a new draft matrix and preserves established goal history',()=>{let e=fixture();e.matrixVersions[0].goals=structuredClone(e.goals);e=applyAction(e,author,{type:'update',goals:[{...e.goals[0],description:'Changed objective'}]});assert.equal(e.matrixVersions.length,2);assert.equal(e.matrixVersions[0].goals?.[0].description,'Recognise meaning');assert.equal(e.matrixVersions[1].goals?.[0].description,'Changed objective');assert.equal(e.matrixVersions[1].establishedAt,undefined)})
- it('withdraws a historical released snapshot while leaving a new draft intact',()=>{let e=applyAction(reviewed(),author,{type:'submit'});e=applyAction(e,committee,{type:'release'});e=applyAction(e,author,{type:'new-revision'});assert.throws(()=>applyAction(e,author,{type:'withdraw-revision',revision:1,reason:'Reason'}));assert.throws(()=>applyAction(e,committee,{type:'withdraw-revision',revision:1,reason:''}));e=applyAction(e,committee,{type:'withdraw-revision',revision:1,reason:'Misprint'});assert.equal(e.status,'draft');assert.equal(e.revision,2);assert.equal(e.snapshots[0].withdrawalReason,'Misprint');assert.throws(()=>applyAction(e,committee,{type:'withdraw-revision',revision:1,reason:'Again'}));assert.equal(e.nTermLock?.value,'1')})
- it('rejects outsiders and every nonteacher writing role',()=>{for(const actor of [{...author,teamIds:['other']},committee,{id:'o',role:'office' as const,teamIds:['t']},{id:'x',role:'admin' as const,teamIds:['t']}])assert.throws(()=>applyAction(fixture(),actor,{type:'update',title:'Attack'}))})
- it('pins old template and invalidates explicit switches',()=>{const e=reviewed();const nextTemplate=structuredClone(DEFAULT_TEMPLATE);nextTemplate.version=2;nextTemplate.items[0].text='Updated';assert.notEqual(e.template.items[0].text, 'Updated');const changed=applyAction(e,author,{type:'switch-template',template:nextTemplate});assert.equal(changed.sections[0].review, undefined);assert.equal(e.sections[0].review?.templateVersion, 1)})
- it('does not allow release with invalid or missing reviews',()=>{const e=applyAction(reviewed(),author,{type:'submit'});delete e.sections[0].review;assert.throws(()=>applyAction(e,committee,{type:'release'}), new RegExp('controle ontbreekt'))})
-})
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import {
+  applyAction,
+  calculateGrade,
+  gradeTable,
+  copyExam,
+  createExam,
+  DEFAULT_TEMPLATE,
+  matrixComparison,
+  validateExam,
+  type Exam,
+  type Actor,
+} from "../src/lib/domain";
+const author: Actor = { id: "a", role: "teacher", teamIds: ["t"] },
+  reviewer: Actor = { id: "r", role: "teacher", teamIds: ["t"] },
+  committee: Actor = { id: "c", role: "committee", teamIds: [] };
+function fixture(): Exam {
+  const e = createExam("e", "t", "Reading");
+  e.pta = {
+    schoolYear: "2026",
+    programme: "TL",
+    subject: "Engels",
+    code: "EN1",
+    material: "Reading",
+    duration: 60,
+    aids: "Dictionary",
+    weight: "25%",
+    scheduled: "P2",
+    resit: true,
+  };
+  e.goals = [
+    { id: "g", domain: "Reading", description: "Recognise meaning" },
+    { id: "z", domain: "Reading", description: "Context" },
+  ];
+  e.matrixVersions = [
+    {
+      version: 1,
+      cells: {
+        g: { R: 1, T1: 0, T2: 0, I: 0 },
+        z: { R: 0, T1: 0, T2: 0, I: 0 },
+      },
+      establishedBy: "a",
+      establishedAt: "2026-01-01",
+    },
+  ];
+  e.sections = [
+    {
+      id: "s",
+      title: "News",
+      text: "A clear text.",
+      source: "Own material",
+      authorId: "a",
+      reviewerId: "r",
+      contributors: ["a"],
+      version: 1,
+      questions: [
+        {
+          id: "q",
+          text: "Which?",
+          options: ["A", "B"],
+          correct: 0,
+          points: 1,
+          category: "R",
+          allocations: { g: 1, z: 0 },
+          rationale: "The text says A.",
+          passage: "A clear text",
+        },
+      ],
+      findings: [],
+    },
+  ];
+  return e;
+}
+const reviewed = () =>
+  applyAction(fixture(), reviewer, {
+    type: "review",
+    sectionId: "s",
+    answers: Object.fromEntries(
+      DEFAULT_TEMPLATE.items.map((i) => [i.id, true]),
+    ),
+  });
+describe("exact decimal N-term method", () => {
+  it("covers below/equal/above one and endpoints", () => {
+    for (const n of ["-10", "0.5", "1", "1.25", "20"]) {
+      assert.equal(calculateGrade(0, 10, n), "1.0");
+      assert.equal(calculateGrade(10, 10, n), "10.0");
+    }
+    assert.equal(calculateGrade(5, 10, "1"), "5.5");
+    assert.equal(calculateGrade(5, 10, "1.25"), "5.8");
+    assert.equal(calculateGrade(5, 10, "0.25"), "4.8");
+  });
+  it("rounds halves up and is monotonic", () => {
+    assert.equal(calculateGrade(1, 20, "1"), "1.5");
+    for (const n of ["-2.37", "0.3", "1", "1.73", "4"]) {
+      const table = gradeTable(100, n);
+      assert.equal(table.length, 101);
+      for (let i = 1; i < table.length; i++)
+        assert.ok(Number(table[i].grade) >= Number(table[i - 1].grade));
+    }
+  });
+  it("keeps recurring fractions and arbitrarily close half boundaries exact", () => {
+    assert.equal(calculateGrade(1, 60, "1"), "1.2");
+    assert.equal(
+      calculateGrade(5, 10, "1.2499999999999999999999999999999999999999"),
+      "5.7",
+    );
+    assert.equal(calculateGrade(5, 10, "1.25"), "5.8");
+    assert.equal(
+      calculateGrade(5, 10, "1.2500000000000000000000000000000000000001"),
+      "5.8",
+    );
+  });
+  it("rejects nonfinite, missing, fractional and zero maxima", () => {
+    for (const n of ["", "NaN", "Infinity"])
+      assert.throws(() => calculateGrade(0, 10, n));
+    assert.throws(() => gradeTable(0, "1"));
+    assert.throws(() => calculateGrade(0.5, 10, "1"));
+  });
+});
+describe("matrix and independent review", () => {
+  it("counts explicit zero allocation without double counting", () => {
+    const e = reviewed();
+    assert.deepEqual(
+      matrixComparison(e).filter((c) => c.actual > 0),
+      [{ goalId: "g", category: "R", planned: 1, actual: 1, difference: 0 }],
+    );
+    assert.deepEqual(validateExam(e), []);
+  });
+  it("blocks mismatches, fractional and invalid allocation", () => {
+    const e = reviewed();
+    e.sections[0].questions[0].allocations.z = 1;
+    assert.ok(
+      validateExam(e).includes(
+        "Puntentoedeling moet exact gelijk zijn aan de vraagscore",
+      ),
+    );
+    assert.ok(
+      validateExam(e).includes("Examen wijkt af van de vastgestelde matrijs"),
+    );
+    e.sections[0].questions[0].points = 1.5;
+    assert.ok(
+      validateExam(e).includes(
+        "Vraagpunten moeten positieve gehele getallen zijn",
+      ),
+    );
+  });
+  it("forbids previous contributors even after assignment change", () => {
+    const e = fixture();
+    e.sections[0].contributors.push("r");
+    assert.throws(
+      () =>
+        applyAction(e, reviewer, {
+          type: "review",
+          sectionId: "s",
+          answers: {},
+        }),
+      new RegExp("Eigen werk"),
+    );
+  });
+  it("invalidates content review and preserves contributor history", () => {
+    const e = reviewed();
+    const section = structuredClone(e.sections[0]);
+    section.text = "Changed";
+    const next = applyAction(e, author, { type: "save-section", section });
+    assert.equal(next.sections[0].review, undefined);
+    assert.notEqual(e.sections[0].review, undefined);
+    assert.equal(next.sections[0].version, 2);
+  });
+  it("requires reviewer closure after author resolution", () => {
+    let e = applyAction(fixture(), reviewer, {
+      type: "finding",
+      sectionId: "s",
+      text: "Clarify",
+    });
+    const findingId = e.sections[0].findings[0].id;
+    e = applyAction(e, author, {
+      type: "resolve-finding",
+      sectionId: "s",
+      findingId,
+      resolution: "Fixed",
+    });
+    assert.throws(() =>
+      applyAction(e, author, {
+        type: "close-finding",
+        sectionId: "s",
+        findingId,
+      }),
+    );
+    e = applyAction(e, reviewer, {
+      type: "close-finding",
+      sectionId: "s",
+      findingId,
+    });
+    assert.equal(e.sections[0].findings[0].state, "closed");
+  });
+});
+describe("immutable workflow and role boundaries", () => {
+  it("locks N across return, resubmit, release, withdrawal and revision", () => {
+    let e = applyAction(reviewed(), author, { type: "submit" });
+    const snapshot = structuredClone(e.snapshots[0]);
+    e = applyAction(e, committee, { type: "return", reason: "Adjust" });
+    assert.throws(
+      () => applyAction(e, author, { type: "update", nTerm: "2" }),
+      new RegExp("vergrendeld"),
+    );
+    e = applyAction(e, author, {
+      type: "resolve-finding",
+      findingId: e.committeeFindings[0].id,
+      resolution: "Addressed",
+    });
+    e = applyAction(e, author, { type: "submit" });
+    e = applyAction(e, committee, { type: "release" });
+    e = applyAction(e, committee, { type: "withdraw", reason: "Print issue" });
+    e = applyAction(e, author, { type: "new-revision" });
+    assert.throws(() =>
+      applyAction(e, author, { type: "update", nTerm: "0.5" }),
+    );
+    assert.deepEqual(e.snapshots[0], snapshot);
+    assert.equal(e.nTermLock?.value, "1");
+  });
+  it("freezes submitted content and separates copy normering", () => {
+    const e = applyAction(reviewed(), author, { type: "submit" });
+    assert.throws(
+      () =>
+        applyAction(e, author, {
+          type: "save-section",
+          section: e.sections[0],
+        }),
+      new RegExp("niet bewerkbaar"),
+    );
+    const copied = copyExam(e, author, DEFAULT_TEMPLATE, "copy");
+    assert.equal(copied.nTermLock, undefined);
+    assert.deepEqual(copied.snapshots, []);
+    assert.equal(copied.sections[0].review, undefined);
+    assert.equal(copied.matrixVersions[0].establishedAt, undefined);
+    assert.equal(
+      applyAction(copied, author, { type: "update", nTerm: "2" }).nTerm,
+      "2",
+    );
+  });
+  it("blocks taking over another author by forging assignment", () => {
+    const e = fixture();
+    const section = structuredClone(e.sections[0]);
+    section.authorId = "r";
+    section.reviewerId = "a";
+    assert.throws(
+      () => applyAction(e, reviewer, { type: "save-section", section }),
+      /toegewezen auteur/,
+    );
+  });
+  it("assigns colleague tasks without granting content-write access or self-review", () => {
+    let e = applyAction(fixture(), author, {
+      type: "assign-section",
+      sectionId: "new",
+      title: "Assigned text",
+      authorId: "r",
+      reviewerId: "a",
+    });
+    assert.equal(e.sections[1].text, "");
+    assert.deepEqual(e.sections[1].contributors, []);
+    assert.throws(() =>
+      applyAction(e, author, {
+        type: "save-section",
+        section: { ...e.sections[1], text: "By wrong author" },
+      }),
+    );
+    e = applyAction(e, reviewer, {
+      type: "save-section",
+      section: { ...e.sections[1], text: "Authored by r" },
+    });
+    assert.throws(
+      () =>
+        applyAction(e, author, {
+          type: "assign-section",
+          sectionId: "new",
+          authorId: "a",
+          reviewerId: "r",
+        }),
+      /eigen werk/,
+    );
+    assert.equal(e.sections[1].text, "Authored by r");
+  });
+  it("retains authorship when a removed section is recreated", () => {
+    const e = applyAction(fixture(), author, {
+      type: "remove-section",
+      sectionId: "s",
+    });
+    const s = fixture().sections[0];
+    s.authorId = "r";
+    s.reviewerId = "a";
+    s.contributors = [];
+    assert.throws(
+      () => applyAction(e, reviewer, { type: "save-section", section: s }),
+      /eigen werk/,
+    );
+  });
+  it("rejects unknown actions and malformed document shapes before persistence", () => {
+    const e = fixture();
+    for (const action of [
+      { type: "unknown" },
+      { type: "update", pta: {} },
+      { type: "update", goals: {} },
+      { type: "save-section", section: { ...e.sections[0], questions: null } },
+      { type: "save-matrix", cells: { g: { R: "1", T1: 0, T2: 0, I: 0 } } },
+      { type: "review", sectionId: "s", answers: { "check-1": "yes" } },
+    ])
+      assert.throws(() => applyAction(e, author, action as any));
+    assert.equal(e.sections[0].version, 1);
+  });
+  it("changes goals through a new draft matrix and preserves established goal history", () => {
+    let e = fixture();
+    e.matrixVersions[0].goals = structuredClone(e.goals);
+    e = applyAction(e, author, {
+      type: "update",
+      goals: [{ ...e.goals[0], description: "Changed objective" }],
+    });
+    assert.equal(e.matrixVersions.length, 2);
+    assert.equal(
+      e.matrixVersions[0].goals?.[0].description,
+      "Recognise meaning",
+    );
+    assert.equal(
+      e.matrixVersions[1].goals?.[0].description,
+      "Changed objective",
+    );
+    assert.equal(e.matrixVersions[1].establishedAt, undefined);
+  });
+  it("withdraws a historical released snapshot while leaving a new draft intact", () => {
+    let e = applyAction(reviewed(), author, { type: "submit" });
+    e = applyAction(e, committee, { type: "release" });
+    e = applyAction(e, author, { type: "new-revision" });
+    assert.throws(() =>
+      applyAction(e, author, {
+        type: "withdraw-revision",
+        revision: 1,
+        reason: "Reason",
+      }),
+    );
+    assert.throws(() =>
+      applyAction(e, committee, {
+        type: "withdraw-revision",
+        revision: 1,
+        reason: "",
+      }),
+    );
+    e = applyAction(e, committee, {
+      type: "withdraw-revision",
+      revision: 1,
+      reason: "Misprint",
+    });
+    assert.equal(e.status, "draft");
+    assert.equal(e.revision, 2);
+    assert.equal(e.snapshots[0].withdrawalReason, "Misprint");
+    assert.throws(() =>
+      applyAction(e, committee, {
+        type: "withdraw-revision",
+        revision: 1,
+        reason: "Again",
+      }),
+    );
+    assert.equal(e.nTermLock?.value, "1");
+  });
+  it("rejects outsiders and every nonteacher writing role", () => {
+    for (const actor of [
+      { ...author, teamIds: ["other"] },
+      committee,
+      { id: "o", role: "office" as const, teamIds: ["t"] },
+      { id: "x", role: "admin" as const, teamIds: ["t"] },
+    ])
+      assert.throws(() =>
+        applyAction(fixture(), actor, { type: "update", title: "Attack" }),
+      );
+  });
+  it("pins old template and invalidates explicit switches", () => {
+    const e = reviewed();
+    const nextTemplate = structuredClone(DEFAULT_TEMPLATE);
+    nextTemplate.version = 2;
+    nextTemplate.items[0].text = "Updated";
+    assert.notEqual(e.template.items[0].text, "Updated");
+    const changed = applyAction(e, author, {
+      type: "switch-template",
+      template: nextTemplate,
+    });
+    assert.equal(changed.sections[0].review, undefined);
+    assert.equal(e.sections[0].review?.templateVersion, 1);
+  });
+  it("does not allow release with invalid or missing reviews", () => {
+    const e = applyAction(reviewed(), author, { type: "submit" });
+    delete e.sections[0].review;
+    assert.throws(
+      () => applyAction(e, committee, { type: "release" }),
+      new RegExp("controle ontbreekt"),
+    );
+  });
+});

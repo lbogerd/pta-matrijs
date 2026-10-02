@@ -8,79 +8,97 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as HealthRouteImport } from './routes/health'
-import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as HealthRouteImport } from "./routes/health";
+import { Route as ApiSplatRouteImport } from "./routes/api.$";
 
+const IndexRoute = IndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const HealthRoute = HealthRouteImport.update({
-  id: '/health',
-  path: '/health',
+  id: "/health",
+  path: "/health",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiSplatRoute = ApiSplatRouteImport.update({
-  id: '/api/$',
-  path: '/api/$',
+  id: "/api/$",
+  path: "/api/$",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/health': typeof HealthRoute
-  '/api/$': typeof ApiSplatRoute
+  "/": typeof IndexRoute;
+  "/health": typeof HealthRoute;
+  "/api/$": typeof ApiSplatRoute;
 }
 export interface FileRoutesByTo {
-  '/health': typeof HealthRoute
-  '/api/$': typeof ApiSplatRoute
+  "/": typeof IndexRoute;
+  "/health": typeof HealthRoute;
+  "/api/$": typeof ApiSplatRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/health': typeof HealthRoute
-  '/api/$': typeof ApiSplatRoute
+  __root__: typeof rootRouteImport;
+  "/": typeof IndexRoute;
+  "/health": typeof HealthRoute;
+  "/api/$": typeof ApiSplatRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/health' | '/api/$'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/health' | '/api/$'
-  id: '__root__' | '/health' | '/api/$'
-  fileRoutesById: FileRoutesById
+  fileRoutesByFullPath: FileRoutesByFullPath;
+  fullPaths: "/" | "/health" | "/api/$";
+  fileRoutesByTo: FileRoutesByTo;
+  to: "/" | "/health" | "/api/$";
+  id: "__root__" | "/" | "/health" | "/api/$";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  HealthRoute: typeof HealthRoute
-  ApiSplatRoute: typeof ApiSplatRoute
+  IndexRoute: typeof IndexRoute;
+  HealthRoute: typeof HealthRoute;
+  ApiSplatRoute: typeof ApiSplatRoute;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/health': {
-      id: '/health'
-      path: '/health'
-      fullPath: '/health'
-      preLoaderRoute: typeof HealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/$': {
-      id: '/api/$'
-      path: '/api/$'
-      fullPath: '/api/$'
-      preLoaderRoute: typeof ApiSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/health": {
+      id: "/health";
+      path: "/health";
+      fullPath: "/health";
+      preLoaderRoute: typeof HealthRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/$": {
+      id: "/api/$";
+      path: "/api/$";
+      fullPath: "/api/$";
+      preLoaderRoute: typeof ApiSplatRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   HealthRoute: HealthRoute,
   ApiSplatRoute: ApiSplatRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
+import type { getRouter } from "./router.tsx";
+import type { createStart } from "@tanstack/react-start";
+declare module "@tanstack/react-start" {
   interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
+    ssr: true;
+    router: Awaited<ReturnType<typeof getRouter>>;
   }
 }

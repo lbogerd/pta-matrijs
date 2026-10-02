@@ -1,9 +1,23 @@
-import pg from 'pg'
-export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 12 })
-export async function transaction<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
-  const client = await pool.connect()
-  try { await client.query('BEGIN'); const result = await fn(client); await client.query('COMMIT'); return result }
-  catch (error) { await client.query('ROLLBACK'); throw error } finally { client.release() }
+import pg from "pg";
+export const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 12,
+});
+export async function transaction<T>(
+  fn: (client: pg.PoolClient) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 export const schema = `
 CREATE TABLE IF NOT EXISTS "user" (id text PRIMARY KEY, name text NOT NULL, email text NOT NULL UNIQUE, "emailVerified" boolean NOT NULL DEFAULT false, image text, "createdAt" timestamptz NOT NULL DEFAULT now(), "updatedAt" timestamptz NOT NULL DEFAULT now(), role text NOT NULL DEFAULT 'teacher' CHECK (role IN ('teacher','committee','office','admin')), banned boolean DEFAULT false, "banReason" text, "banExpires" timestamptz);
@@ -20,4 +34,4 @@ CREATE TABLE IF NOT EXISTS edit_locks (exam_id text REFERENCES exams(id) ON DELE
 CREATE TABLE IF NOT EXISTS files (id text PRIMARY KEY, exam_id text NOT NULL REFERENCES exams(id), name text NOT NULL, mime text NOT NULL, path text NOT NULL, created_at timestamptz DEFAULT now());
 CREATE INDEX IF NOT EXISTS exams_team_idx ON exams(team_id);
 CREATE INDEX IF NOT EXISTS sessions_user_idx ON session("userId");
-`
+`;
