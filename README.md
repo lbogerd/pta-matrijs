@@ -48,3 +48,7 @@ Accounts hebben één exclusieve rol. Platformbeheer geeft geen toegang tot exam
 De N-term wordt bij de eerste teamvaststelling/indiening permanent vergrendeld voor het examen. Terugsturen, intrekken en nieuwe revisies heffen die vergrendeling niet op. Een kopie is een nieuw examen en krijgt een eigen normering. Normering volgt de expliciet gekozen [Examenblad-hoofdrelatie en grensrelaties](https://www.examenblad.nl/system/files/2018/vragen_en_antwoorden_webinar_9_maart_2017_versie_4-4-2017.pdf), met exacte beslissingen op afrondingsgrenzen en halve waarden naar boven. Dit is een rekenkeuze voor de app, geen juridische claim over schoolexamens.
 
 [Beheer, back-up en herstel](docs/operations.md) beschrijft accountbeheer, private opslag, herstelcontrole en publicatie. E-mailbezorging is niet geconfigureerd: accountuitgifte en wachtwoordherstel lopen via de beheerder.
+
+## Productdemo
+
+Bekijk de [openbare productdemo](https://pta-matrijs.tainer.run/demo/) voor de volledige gebruikersworkflow met screenshots, van PTA en collegiale controle tot vrijgave en PDF-downloads. Zie [de demo-documentatie](docs/demo.md) voor de geïsoleerde opnameprocedure.

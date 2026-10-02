@@ -1,0 +1,10 @@
+# Use with the root compose.yaml and --project-name pta-demo-capture.
+services:
+  web:
+    ports: !override
+      - "127.0.0.1:3818:3000"
+    environment:
+      APP_URL: http://127.0.0.1:3818
+      BETTER_AUTH_URL: http://127.0.0.1:3818
+      BOOTSTRAP_ADMIN_EMAIL: ""
+      BOOTSTRAP_ADMIN_PASSWORD: ""

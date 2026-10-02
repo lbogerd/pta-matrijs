@@ -1,0 +1,198 @@
+[
+  {
+    "id": "01-login",
+    "title": "Een eigen werkruimte",
+    "role": "Iedere gebruiker",
+    "description": "Meld je aan met je schoolaccount. Je rol bepaalt welke examens en handelingen beschikbaar zijn.",
+    "image": "screenshots/01-login.png"
+  },
+  {
+    "id": "02-dashboard",
+    "title": "Overzicht en voortgang",
+    "role": "Docent",
+    "description": "Bekijk de examens van je team, hun status en de route van concept naar vrijgave.",
+    "image": "screenshots/02-dashboard.png"
+  },
+  {
+    "id": "03-create",
+    "title": "Een examen starten",
+    "role": "Docent",
+    "description": "Geef het examen een titel en kies het docententeam. In deze rondleiding werken we verder met een ingevuld voorbeeld.",
+    "image": "screenshots/03-create.png"
+  },
+  {
+    "id": "04-pta",
+    "title": "PTA en examengegevens",
+    "role": "Docent",
+    "description": "Leg schooljaar, opleiding, vak, PTA-code, leerstof, duur, hulpmiddelen en weging vast.",
+    "image": "screenshots/04-pta.png"
+  },
+  {
+    "id": "05-matrix",
+    "title": "Van leerdoelen naar punten",
+    "role": "Docent",
+    "description": "Verdeel de gewenste punten per leerdoel over R, T1, T2 en I. De vergelijking maakt verschillen met de vragen zichtbaar.",
+    "image": "screenshots/05-matrix.png"
+  },
+  {
+    "id": "06-matrix-established",
+    "title": "De matrijs vaststellen",
+    "role": "Docent",
+    "description": "Stel de matrijs vast als uitgangspunt voor het schrijfwerk. Nieuwe wijzigingen krijgen een eigen matrijsversie.",
+    "image": "screenshots/06-matrix-established.png"
+  },
+  {
+    "id": "07-assignment",
+    "title": "Schrijfwerk en controle verdelen",
+    "role": "Docent",
+    "description": "Wijs per onderdeel een auteur en een andere docent als reviewer toe. Zo blijft de inhoudelijke controle onafhankelijk.",
+    "image": "screenshots/07-assignment.png"
+  },
+  {
+    "id": "08-editor",
+    "title": "Teksten en vragen schrijven",
+    "role": "Auteur",
+    "description": "Voeg de brontekst, antwoordopties, juiste antwoorden, onderbouwing en relevante tekstpassages toe. Koppel vraagpunten aan leerdoelen en RTTI; de live matrijs rekent mee.",
+    "image": "screenshots/08-editor.png"
+  },
+  {
+    "id": "09-content",
+    "title": "Het volledige onderdeel bekijken",
+    "role": "Auteur",
+    "description": "Lees de tekst en de vragen samen terug, inclusief bron, puntentoedeling en antwoordonderbouwing.",
+    "image": "screenshots/09-content.png"
+  },
+  {
+    "id": "10-review-finding",
+    "title": "Collegiale controle en bevindingen",
+    "role": "Reviewer",
+    "description": "Loop de inhoudelijke checklist na en leg verbeterpunten vast. Open bevindingen moeten worden afgehandeld voordat de controle kan worden afgerond.",
+    "image": "screenshots/10-review-finding.png"
+  },
+  {
+    "id": "11-resolution",
+    "title": "Een bevinding beantwoorden",
+    "role": "Auteur",
+    "description": "Beschrijf hoe het verbeterpunt is opgelost. De reviewer beoordeelt en sluit de oplossing.",
+    "image": "screenshots/11-resolution.png"
+  },
+  {
+    "id": "12-review-complete",
+    "title": "De controle afronden",
+    "role": "Reviewer",
+    "description": "Alle controlepunten zijn nagelopen en de bevinding is gesloten. Het onderdeel is nu gecontroleerd.",
+    "image": "screenshots/12-review-complete.png"
+  },
+  {
+    "id": "13-grading",
+    "title": "Normering controleren",
+    "role": "Docent",
+    "description": "Kies de N-term en controleer de volledige score-cijfertabel. Bij de eerste indiening wordt de N-term permanent vergrendeld.",
+    "image": "screenshots/13-grading.png"
+  },
+  {
+    "id": "14-preview",
+    "title": "De pagina-opmaak beoordelen",
+    "role": "Docent",
+    "description": "Bekijk de echte pagina-indeling voordat het examen wordt ingediend. De preview gebruikt dezelfde paginering als de PDF.",
+    "image": "screenshots/14-preview.png"
+  },
+  {
+    "id": "15-exam-document",
+    "title": "Het leerlingexamen",
+    "role": "Docent",
+    "description": "Het leerlingdocument toont teksten, vragen en antwoordopties zonder de antwoorden of de score-cijfertabel.",
+    "image": "screenshots/15-exam-document.png"
+  },
+  {
+    "id": "16-answer-document",
+    "title": "Het correctiemodel",
+    "role": "Docent",
+    "description": "Het correctiemodel bevat de juiste antwoorden, onderbouwingen en de score-cijfertabel.",
+    "image": "screenshots/16-answer-document.png"
+  },
+  {
+    "id": "17-validation",
+    "title": "Klaar voor vaststelling",
+    "role": "Docent",
+    "description": "De procescontroles toetsen of de matrijs, inhoud, reviews en normering compleet zijn. Pas daarna kan het team indienen.",
+    "image": "screenshots/17-validation.png"
+  },
+  {
+    "id": "18-submit",
+    "title": "Vaststellen en indienen",
+    "role": "Docent",
+    "description": "Bevestig revisie, maximumscore, N-term en score-cijfertabel. De ingediende versie wordt als snapshot vastgelegd.",
+    "image": "screenshots/18-submit.png"
+  },
+  {
+    "id": "19-committee",
+    "title": "De commissie beoordeelt",
+    "role": "Examencommissie",
+    "description": "De commissie krijgt de ingediende examens in haar werkruimte en beoordeelt de vastgelegde versie.",
+    "image": "screenshots/19-committee.png"
+  },
+  {
+    "id": "20-committee-decision",
+    "title": "Vrijgeven of gemotiveerd terugsturen",
+    "role": "Examencommissie",
+    "description": "Bekijk het examen en de vastgelegde normering. Geef het vrij of stuur het met een concrete reden terug naar het team.",
+    "image": "screenshots/20-committee-decision.png"
+  },
+  {
+    "id": "21-returned",
+    "title": "Een commissiebevinding verwerken",
+    "role": "Docent",
+    "description": "Verwerk het teruggestuurde punt en leg de oplossing vast. De oorspronkelijke N-term blijft vergrendeld.",
+    "image": "screenshots/21-returned.png"
+  },
+  {
+    "id": "22-released",
+    "title": "Een vastgelegde versie vrijgeven",
+    "role": "Examencommissie",
+    "description": "De vrijgave hoort bij één revisie. Besluiten en versies blijven terug te vinden in het dossier.",
+    "image": "screenshots/22-released.png"
+  },
+  {
+    "id": "23-office",
+    "title": "Vrijgegeven examens vinden",
+    "role": "Examenbureau",
+    "description": "Het examenbureau ziet welke examens beschikbaar zijn voor afname.",
+    "image": "screenshots/23-office.png"
+  },
+  {
+    "id": "24-download",
+    "title": "Examen en correctiemodel downloaden",
+    "role": "Examenbureau",
+    "description": "Download beide PDF’s van dezelfde vrijgegeven revisie. Elke download wordt geregistreerd.",
+    "image": "screenshots/24-download.png"
+  },
+  {
+    "id": "25-withdraw",
+    "title": "Zo nodig een vrijgave intrekken",
+    "role": "Examencommissie · vervolg",
+    "description": "Een intrekking vereist een reden en bevestiging. Nieuwe downloads worden geblokkeerd; al gedownloade bestanden kunnen niet worden teruggehaald.",
+    "image": "screenshots/25-withdraw.png"
+  },
+  {
+    "id": "26-withdrawn",
+    "title": "Intrekking zichtbaar bij het bureau",
+    "role": "Examenbureau · vervolg",
+    "description": "De ingetrokken versie blijft zichtbaar met de reden. De downloadknoppen zijn niet meer beschikbaar.",
+    "image": "screenshots/26-withdrawn.png"
+  },
+  {
+    "id": "27-revision",
+    "title": "Verder met een nieuwe revisie",
+    "role": "Docent · vervolg",
+    "description": "Start een nieuwe conceptrevisie om het examen opnieuw te doorlopen. De N-term blijft bij dit examen vergrendeld; kopiëren maakt een nieuw examen met een eigen normering.",
+    "image": "screenshots/27-revision.png"
+  },
+  {
+    "id": "28-copy",
+    "title": "Een nieuw examen op basis van bestaand werk",
+    "role": "Docent · vervolg",
+    "description": "Een kopie neemt de inhoud over als nieuw concept. Matrijsvaststelling, reviews en normering moeten opnieuw worden gecontroleerd en vastgesteld.",
+    "image": "screenshots/28-copy.png"
+  }
+]

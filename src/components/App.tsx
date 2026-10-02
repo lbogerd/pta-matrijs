@@ -551,6 +551,9 @@ function Login({ onLogin }: { onLogin: () => Promise<void> }) {
           <Button type="submit" loading={busy}>
             Inloggen <ArrowRight size={15} />
           </Button>
+          <p style={{ textAlign: "center", marginTop: 20 }}>
+            <a href="/demo/">Bekijk de productdemo →</a>
+          </p>
           <div className="login-security">
             <LockKeyhole size={12} />
             Je examenmateriaal blijft in veilige handen.
