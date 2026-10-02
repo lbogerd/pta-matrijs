@@ -205,7 +205,23 @@ export function ExamDetail({
         <Preview exam={exam} />
       )}{" "}
       {tab === "publish" && (
-        <Publish exam={exam} user={user} editable={editable} act={act} />
+        <Publish
+          exam={exam}
+          user={user}
+          editable={editable}
+          act={act}
+          actorNames={Object.fromEntries([
+            ...(data.members || []).map((member: any) => [
+              member.id,
+              member.name,
+            ]),
+            ...(data.audit || []).map((event: any) => [
+              event.actor_id,
+              event.actor,
+            ]),
+            [user.id, user.name],
+          ])}
+        />
       )}{" "}
       {tab === "preview" && user.role === "office" && (
         <Empty title="Officiële bestanden">
@@ -798,11 +814,13 @@ function Publish({
   user,
   editable,
   act,
+  actorNames,
 }: {
   exam: Model;
   user: any;
   editable: boolean;
   act: (a: any) => Promise<any>;
+  actorNames: Record<string, string>;
 }) {
   const [reason, setReason] = useState(""),
     [modal, setModal] = useState("");
@@ -1045,7 +1063,8 @@ function Publish({
               </strong>
               <span className="muted">
                 {" "}
-                · {new Date(e.at).toLocaleString("nl-NL")}
+                · {actorNames[e.actorId] || e.actorId} ·{" "}
+                {new Date(e.at).toLocaleString("nl-NL")}
               </span>
               {e.detail && <p>{e.detail}</p>}
             </div>
