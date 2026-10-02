@@ -24,8 +24,15 @@ export async function withTestDatabase<T>(
     process.env.DATABASE_URL = originalUrl;
     try {
       if (created) {
-        // FORCE also covers connections left open by a failing setup/import.
-        await admin.query(`DROP DATABASE "${name}" WITH (FORCE)`);
+        try {
+          // Pool.end() may resolve before PostgreSQL observes the disconnect.
+          // A normal drop waits for it without sending a fatal error to clients.
+          await admin.query(`DROP DATABASE "${name}"`);
+        } catch (error) {
+          if ((error as { code?: string }).code !== "55006") throw error;
+          // A failed setup/import may genuinely leave a connection behind.
+          await admin.query(`DROP DATABASE "${name}" WITH (FORCE)`);
+        }
       }
     } finally {
       await admin.end();

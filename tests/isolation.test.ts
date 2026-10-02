@@ -11,8 +11,10 @@ test(
     const admin = new pg.Client({ connectionString: originalUrl });
     await admin.connect();
     try {
-      for (const outcome of ["success", "assertion", "setup"] as const) {
+      for (const outcome of ["success", "disconnecting", "assertion", "setup"] as const) {
         let databaseName = "";
+        let disconnect = Promise.resolve();
+        const connectionErrors: Error[] = [];
         const run = withTestDatabase(async ({ name, url }) => {
           databaseName = name;
           assert.notEqual(
@@ -21,6 +23,7 @@ test(
           );
           assert.equal(process.env.DATABASE_URL, url);
           const fixture = new pg.Client({ connectionString: url });
+          fixture.on("error", (error) => connectionErrors.push(error));
           await fixture.connect();
           try {
             await fixture.query(
@@ -31,10 +34,16 @@ test(
               assert.fail("intentional test failure");
             if (outcome === "setup") await fixture.query("INVALID SETUP SQL");
           } finally {
-            await fixture.end();
+            if (outcome === "disconnecting") {
+              // Model a socket whose graceful disconnect reaches the server
+              // after the application has finished its pool cleanup.
+              disconnect = new Promise<void>((resolve, reject) => {
+                setTimeout(() => fixture.end().then(resolve, reject), 100);
+              });
+            } else await fixture.end();
           }
         });
-        if (outcome === "success") await run;
+        if (outcome === "success" || outcome === "disconnecting") await run;
         else
           await assert.rejects(
             run,
@@ -42,6 +51,8 @@ test(
               ? /intentional test failure/
               : /syntax error/,
           );
+        await disconnect;
+        assert.deepEqual(connectionErrors, []);
         assert.equal(process.env.DATABASE_URL, originalUrl);
         assert.equal(
           (
